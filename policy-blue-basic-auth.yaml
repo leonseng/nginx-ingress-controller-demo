@@ -1,0 +1,19 @@
+# Basic auth credential is user:password :)
+kind: Secret
+metadata:
+  name: htpasswd-secret
+  namespace: blue
+apiVersion: v1
+type: nginx.org/htpasswd
+stringData:
+  htpasswd: |
+    user:$2y$10$e8l.Q45pYch7JQWRyo67Y.R1JKfEN7Tg6JiWm3bYGEYwanpEkD5PO
+---
+apiVersion: k8s.nginx.org/v1
+kind: Policy
+metadata:
+  name: basic-auth
+  namespace: blue
+spec:
+  basicAuth:
+    secret: htpasswd-secret

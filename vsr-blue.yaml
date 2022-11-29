@@ -1,0 +1,17 @@
+apiVersion: k8s.nginx.org/v1
+kind: VirtualServerRoute
+metadata:
+  name: blue-vsr
+  namespace: blue
+spec:
+  host: colour.example.com
+  upstreams:
+    - name: blue-svc
+      service: nginx-blue
+      port: 8080
+  subroutes:
+    - path: /blue
+      action:
+        proxy:
+          upstream: blue-svc
+          rewritePath: /

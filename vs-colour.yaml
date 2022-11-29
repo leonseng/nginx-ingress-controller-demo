@@ -1,0 +1,12 @@
+apiVersion: k8s.nginx.org/v1
+kind: VirtualServer
+metadata:
+  name: colour
+  namespace: nginx-ingress
+spec:
+  host: colour.example.com
+  routes:
+    - path: /blue
+      route: blue/blue-vsr
+    - path: /green
+      route: green/green-vsr

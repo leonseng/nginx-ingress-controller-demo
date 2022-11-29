@@ -1,0 +1,38 @@
+apiVersion: appprotect.f5.com/v1beta1
+kind: APPolicy
+metadata:
+  name: basic-owasp
+  namespace: security
+spec:
+  policy:
+    name: basic-owasp
+    template:
+      name: POLICY_TEMPLATE_NGINX_BASE
+    applicationLanguage: utf-8
+    enforcementMode: blocking
+---
+apiVersion: appprotect.f5.com/v1beta1
+kind: APLogConf
+metadata:
+  name: log-all
+  namespace: security
+spec:
+  content:
+    format: default
+    max_message_size: 64k
+    max_request_size: any
+  filter:
+    request_type: all
+---
+apiVersion: k8s.nginx.org/v1
+kind: Policy
+metadata:
+  name: common-sec-policy
+  namespace: security
+spec:
+  waf:
+    enable: true
+    apPolicy: "basic-owasp"
+    securityLogs:
+      - enable: true
+        apLogConf: "log-all"
