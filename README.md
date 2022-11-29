@@ -56,5 +56,11 @@ kubectl apply -f vsr-blue-with-policy.yaml
 Test basic auth
 ```
 CRED=$(echo -n "user:password" | base64)
-curl --resolve colour.example.com:$NIC_PORT:$NIC_IP -H "Authentication: $CRED" "colour.example.com:$NIC_PORT/blue?<script>"
+curl --resolve colour.example.com:$NIC_PORT:$NIC_IP -H "Authorization: Basic $CRED" "colour.example.com:$NIC_PORT/blue?<script>"
+```
+
+## Reset
+
+```
+kubectl delete -f ./
 ```
