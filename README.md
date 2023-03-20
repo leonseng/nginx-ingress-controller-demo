@@ -1,18 +1,21 @@
 # NGINX Ingress Controller Demo
 
-This repository contains demo flows for [NGINX Ingress Controller](https://github.com/nginxinc/kubernetes-ingress) by F5.
-
-## Prereq
-
-NGINX Ingress Controller should be installed in cluster and exposed via Kubernetes service
+This repository contains demo flows for [F5 NGINX Ingress Controller](https://github.com/nginxinc/kubernetes-ingress).
 
 ## Setup
+
+Prerequisite:
+1. NGINX Ingress Controller should be installed in cluster
+1. NGINX Ingress Controller should be exposed via Kubernetes service with an IP accessible by a test client
+1. This repository creates and deploys resources in the namespaces `blue`, `green` and `security`. Ensure NGINX Ingress Controller is configured to monitor for CRDs in these namespaces.
 
 ```
 git clone https://github.com/leonseng/nginx-ingress-controller-demo.git
 cd nginx-ingress-controller-demo
 kubectl apply -f 00-setup/
 ```
+
+---
 
 ## Demo flow
 
@@ -56,7 +59,7 @@ $ curl --resolve colour.example.com:$NIC_PORT:$NIC_IP "colour.example.com:$NIC_P
 <html><head><title>Request Rejected</title></head><body>The requested URL was rejected. Please consult with your administrator.<br><br>Your support ID is: 10888946109843365222<br><br><a href='javascript:history.back();'>[Go Back]</a></body></html>
 ```
 
-### Per Route Policy
+### 03 Per Route Policy
 
 Show policy per Virtual Server route.
 
@@ -84,6 +87,8 @@ $ CRED=$(echo -n "user:password" | base64)
 $ curl --resolve colour.example.com:$NIC_PORT:$NIC_IP -H "Authorization: Basic $CRED" "colour.example.com:$NIC_PORT/blue"
 blue
 ```
+
+---
 
 ## Reset
 
