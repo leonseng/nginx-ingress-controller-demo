@@ -6,6 +6,12 @@ metadata:
 spec:
   host: colour.example.com
   routes:
+    - path: /
+      action:
+        return:
+          code: 200
+          type: text/plain
+          body: "Virtual Server is up.\n"
     - path: /blue
       route: blue/blue-vsr
     - path: /green
