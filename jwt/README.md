@@ -1,5 +1,9 @@
 # JWT
 
+Demo to showcase NGINX Ingress Controller enforcing authentication and authorization by validating JWT presented by client.
+
+Backend is a [httpbin](httpbin.org) pod that presents the `/headers` endpoint to responds to the client with the HTTP headers it receives it the original requests, allowing us to verify the behaviour of NGINX Ingress Controller.
+
 ## Setup
 
 ```bash
@@ -46,7 +50,9 @@ $ curl httpbin.nic-demo-jwt.com/headers
 }
 ```
 
-### Check for JWT
+### Authenticating with JWT
+
+Configure NGINX Ingress Controller to authenticate the client based on the presented JWT. See [How NGINX Plus Validates a JWT](https://docs.nginx.com/nginx/admin-guide/security-controls/configuring-jwt-authentication/#how-nginx-plus-validates-a-jwt) for more information on what is validated.
 
 Apply JWT policy and retest
 ```
@@ -78,56 +84,75 @@ $ curl -H "Authorization: Bearer $(cat .tmp/user.jwt)"  httpbin.nic-demo-jwt.com
 }
 ```
 
-### Verify claim in JWT
+### Enrich header with JWT claim
 
-Configure JWT policy to check for `admin` claim. Claim is added as a HTTP header and then checked for in match condition
+Add JWT claim as HTTP header for proxied request to backend
 ```
-$ kubectl apply -f 02-vs-jwt-claim.yaml
+$ kubectl apply -f 02-vs-jwt-add-header.yaml
 virtualserver.k8s.nginx.org/httpbin configured
 ```
 
-Send request with `user` JWT returns `401` as its claim `admin=false`
+Note that the backend now sees the additional HTTP headers `Jwt-Claim-Role` and `Jwt-Claim-Name` with values extracted from the JWT claims:
 ```
-$ curl -H "Authorization: Bearer $(cat .tmp/user.jwt)"  httpbin.nic-demo-jwt.com/headers
-401 Unauthorized
-```
-
-Now, send request with `admin` JWT with claim `admin=true`
-```
-$ curl -H "Authorization: Bearer $(cat .tmp/admin.jwt)"  httpbin.nic-demo-jwt.com/headers
+$ curl -H "Authorization: Bearer $(cat .tmp/user.jwt)" httpbin.nic-demo-jwt.com/headers
 {
   "headers": {
     "Accept": "*/*",
-    "Authorization": "Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IkxhR09aUkhjWmhZSEZuV3F5akxPdE9WU1ljRlRQVElsb21ZY0MxMnJ4ZGciLCJ0eXAiOiJKV1QifQ.eyJhZG1pbiI6dHJ1ZSwiaWF0IjoiMTY5MzI4NDgyNiIsIm5hbWUiOiJTYW0gU21pdGgiLCJzdWIiOiIxMjM0NTY3ODkwIn0.acqIGSdBAFlTqKCGS8PHhcl-moRm9gVUjJbDsyuELtlolG3qBMeK4r2iMtmnEr7sAZweMtuAAu_7XE8BsrJmLvALM8kXbOxkfdc4j9IZagDJNRkCZKKvPZtvSUW2lEx_-lAloGFaZjTnLIwWEbY7FYeWv5EHXlD6mUKXCUpQeu-RJ3-r_6GDSgJBFbAGrgVk-bzsON9b0O7BrFOTQ4bMMIkFu9xcu2v9N-K9QG4rFPh0FjOdxLVsYeRjx9Pw8WlKH2Q3-HtBRLPa9xRPwnNzveZDN_geFd3EKoFs0ESrCjOuIrLnH6KWWkjopJgIX1QtMUUZ9rziENw1-QysgHTavg",
+    "Authorization": "Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IkxhR09aUkhjWmhZSEZuV3F5akxPdE9WU1ljRlRQVElsb21ZY0MxMnJ4ZGciLCJ0eXAiOiJKV1QifQ.eyJpYXQiOiIxNjkzMjg1NjQ5IiwibmFtZSI6IkNhc2V5IENvbGUiLCJyb2xlIjoidXNlciIsInN1YiI6IjEyMzQ1Njc4OTAifQ.L9qkznKBwyYU85J-sHYvVDb5-0_BMoxGqR3QFfYmjja-dk8xw9NbfOexTMsQ0kuyVGWhayqGfvcQ1cvyU7n4w7K1bVOnr2nA8nQzRcAZqoVopo2Q-C3dmTt8GHQBxOocoyZjOHrex-5ZffZLAAydROSP1y3DT5RNzPl53dHxJh-OmDq6VgZJb_BXP7vg-6fQa1U4mTBSQpIUoJ_Kn-P-3ZE_BMYWEeU7oJnoak4qi36jQXEO4to1lIbddSfHcNs6ZaM81rzfO-2X9Dc5rynX7uoqM0cPU_VCwFQPc6pRl9yX7W6fuL9zr19U1lcaxaddZgr9uCAmnTH_uOepqrP7Xw",
     "Connection": "close",
     "Host": "httpbin.nic-demo-jwt.com",
+    "Jwt-Claim-Name": "Casey Cole",
+    "Jwt-Claim-Role": "user",
     "User-Agent": "curl/7.68.0",
     "X-Forwarded-Host": "httpbin.nic-demo-jwt.com"
   }
 }
 ```
 
-### Enrich header with JWT claim
+### Verify claim in JWT
 
-Add JWT claim as HTTP header for proxied request to backend
+Configure NGINX Ingress Controller to authorize access to an endpoint by validating one or more claims presented in the JWT.
+
+Configure an additional endpoint `/anything` which checks for `$request_method=POST` and `role=admin`:
 ```
-$ kubectl apply -f 03-vs-jwt-claim-add-header.yaml
+$ kubectl apply -f 03-vs-jwt-claim.yaml
 virtualserver.k8s.nginx.org/httpbin configured
 ```
 
-Note that the backend now sees the additional HTTP headers `Jwt-Claim-Admin` and `Jwt-Claim-Name` with values extracted from the JWT claims:
+`GET` and `POST` requests with `user` JWT return `401`:
 ```
-$ curl -H "Authorization: Bearer $(cat .tmp/admin.jwt)"  httpbin.nic-demo-jwt.com/headers
+$ curl -H "Authorization: Bearer $(cat .tmp/user.jwt)" httpbin.nic-demo-jwt.com/headers
+401 Unauthorized
+
+$ curl -X POST -H "Authorization: Bearer $(cat .tmp/user.jwt)" httpbin.nic-demo-jwt.com/anything
+401 Unauthorized
+```
+
+`GET` request with `admin` JWT returns `401`:
+```
+$ curl -H "Authorization: Bearer $(cat .tmp/admin.jwt)" httpbin.nic-demo-jwt.com/anything
+401 Unauthorized
+```
+
+`POST` request with `admin` JWT is allowed:
+```
+$ curl -X POST -H "Authorization: Bearer $(cat .tmp/admin.jwt)" httpbin.nic-demo-jwt.com/anything
 {
+  "args": {},
+  "data": "",
+  "files": {},
+  "form": {},
   "headers": {
     "Accept": "*/*",
-    "Authorization": "Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IkxhR09aUkhjWmhZSEZuV3F5akxPdE9WU1ljRlRQVElsb21ZY0MxMnJ4ZGciLCJ0eXAiOiJKV1QifQ.eyJhZG1pbiI6dHJ1ZSwiaWF0IjoiMTY5MzI4NDgyNiIsIm5hbWUiOiJTYW0gU21pdGgiLCJzdWIiOiIxMjM0NTY3ODkwIn0.acqIGSdBAFlTqKCGS8PHhcl-moRm9gVUjJbDsyuELtlolG3qBMeK4r2iMtmnEr7sAZweMtuAAu_7XE8BsrJmLvALM8kXbOxkfdc4j9IZagDJNRkCZKKvPZtvSUW2lEx_-lAloGFaZjTnLIwWEbY7FYeWv5EHXlD6mUKXCUpQeu-RJ3-r_6GDSgJBFbAGrgVk-bzsON9b0O7BrFOTQ4bMMIkFu9xcu2v9N-K9QG4rFPh0FjOdxLVsYeRjx9Pw8WlKH2Q3-HtBRLPa9xRPwnNzveZDN_geFd3EKoFs0ESrCjOuIrLnH6KWWkjopJgIX1QtMUUZ9rziENw1-QysgHTavg",
+    "Authorization": "Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IkxhR09aUkhjWmhZSEZuV3F5akxPdE9WU1ljRlRQVElsb21ZY0MxMnJ4ZGciLCJ0eXAiOiJKV1QifQ.eyJpYXQiOiIxNjkzMjg1NjQ5IiwibmFtZSI6IlNhbSBTbWl0aCIsInJvbGUiOiJhZG1pbiIsInN1YiI6IjEyMzQ1Njc4OTAifQ.GPu56lRyNXG7JVZHc4qojaVUh6xPJXqtY6FtaIUVaLei7dm4OT8G_PaTGy4St0RU3IJ40HlBz-yOhqOhM5zM2I1MV-RK_oZ_dc5wdrCzFaxyadfhQfwG7W1IwY237OqCY3GZ8r0yuHT-Cs-gpxsi4gKA1H1jO81DKxYeT2k94VwZS8ANQwUQZUVgEpo-NriOwe9RqgI55507tTqeohIvF7D91Ku5PVaVmOfaM6xmJ_jVbtX87JMPGNpMy1Of0hQPmzXI2SeJdTTvwvYHYuq_V268TvMcBYQbWwKQOqKi-IJe4wb_e1828f1I1VhAW0Upk6gA73o62LUNd23HOe_zag",
     "Connection": "close",
     "Host": "httpbin.nic-demo-jwt.com",
-    "Jwt-Claim-Admin": "true",
-    "Jwt-Claim-Name": "Sam Smith",
     "User-Agent": "curl/7.68.0",
     "X-Forwarded-Host": "httpbin.nic-demo-jwt.com"
-  }
+  },
+  "json": null,
+  "method": "POST",
+  "origin": "192.168.0.115",
+  "url": "http://httpbin.nic-demo-jwt.com/anything"
 }
 ```

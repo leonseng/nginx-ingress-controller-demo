@@ -15,19 +15,24 @@ spec:
       port: 8080
   routes:
     - path: /
+      action:
+        proxy:
+          upstream: httpbin-svc
+          requestHeaders:
+            set:
+              - name: Jwt-Claim-Role
+                value: ${jwt_claim_role}
+              - name: Jwt-Claim-Name
+                value: ${jwt_claim_name}
+    - path: /anything
       matches:
         - conditions:
+            - variable: $request_method
+              value: POST
             - header: role
               value: "admin"
           action:
-            proxy:
-              upstream: httpbin-svc
-              requestHeaders:
-                set:
-                  - name: Jwt-Claim-Role
-                    value: ${jwt_claim_role}
-                  - name: Jwt-Claim-Name
-                    value: ${jwt_claim_name}
+            pass: httpbin-svc
       action:
         return:
           code: 401

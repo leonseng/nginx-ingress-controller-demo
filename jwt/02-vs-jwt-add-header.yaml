@@ -15,14 +15,12 @@ spec:
       port: 8080
   routes:
     - path: /
-      matches:
-        - conditions:
-            - header: role
-              value: "admin"
-          action:
-            pass: httpbin-svc
       action:
-        return:
-          code: 401
-          type: text/plain
-          body: "401 Unauthorized\n"
+        proxy:
+          upstream: httpbin-svc
+          requestHeaders:
+            set:
+              - name: Jwt-Claim-Role
+                value: ${jwt_claim_role}
+              - name: Jwt-Claim-Name
+                value: ${jwt_claim_name}
