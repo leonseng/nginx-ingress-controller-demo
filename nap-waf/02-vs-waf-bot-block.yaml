@@ -1,13 +1,13 @@
 apiVersion: appprotect.f5.com/v1beta1
 kind: APPolicy
 metadata:
-  name: block-bot-allow-curl
+  name: block-bot
   namespace: nic-demo-waf
 spec:
   policy:
     applicationLanguage: utf-8
     enforcementMode: blocking
-    name: block-bot-allow-curl
+    name: block-bot
     template:
       name: POLICY_TEMPLATE_NGINX_BASE
     bot-defense:
@@ -21,9 +21,19 @@ spec:
             action: block
           - name: malicious-bot
             action: block
-        signatures:
-          - action: alarm
-            name: curl
+---
+apiVersion: appprotect.f5.com/v1beta1
+kind: APLogConf
+metadata:
+  name: logconf
+  namespace: nic-demo-waf
+spec:
+  content:
+    format: default
+    max_message_size: 64k
+    max_request_size: any
+  filter:
+    request_type: illegal
 ---
 apiVersion: k8s.nginx.org/v1
 kind: Policy
@@ -32,9 +42,27 @@ metadata:
   namespace: nic-demo-waf
 spec:
   waf:
-    apPolicy: block-bot-allow-curl
+    apPolicy: block-bot
     enable: true
     securityLogs:
       - apLogConf: logconf
         enable: true
         logDest: stderr
+---
+apiVersion: k8s.nginx.org/v1
+kind: VirtualServer
+metadata:
+  name: httpbin
+  namespace: nic-demo-waf
+spec:
+  host: httpbin.nic-demo-waf.com
+  policies:
+    - name: waf-policy
+  upstreams:
+    - name: httpbin-svc
+      service: httpbin
+      port: 8080
+  routes:
+    - path: /
+      action:
+        pass: httpbin-svc
