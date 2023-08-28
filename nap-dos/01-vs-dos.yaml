@@ -1,0 +1,56 @@
+apiVersion: appprotectdos.f5.com/v1beta1
+kind: APDosPolicy
+metadata:
+  name: dos-policy
+  namespace: nic-demo-dos
+spec:
+  mitigation_mode: "standard"
+  signatures: "on"
+  bad_actors: "off"
+  automation_tools_detection: "off"
+  tls_fingerprint: "on"
+---
+apiVersion: appprotectdos.f5.com/v1beta1
+kind: APDosLogConf
+metadata:
+  name: dos-log-conf
+  namespace: nic-demo-dos
+spec:
+  filter:
+    traffic-mitigation-stats: all
+    bad-actors: top 10
+    attack-signatures: top 10
+---
+apiVersion: appprotectdos.f5.com/v1beta1
+kind: DosProtectedResource
+metadata:
+  name: dos-protected
+  namespace: nic-demo-dos
+spec:
+  enable: true
+  name: my-dos
+  apDosMonitor:
+    uri: "httpbin.nic-demo-dos.com"
+  apDosPolicy: dos-policy
+  dosAccessLogDest: stderr
+  dosSecurityLog:
+    enable: true
+    apDosLogConf: dos-log-conf
+    dosLogDest: stderr
+---
+apiVersion: k8s.nginx.org/v1
+kind: VirtualServer
+metadata:
+  name: httpbin
+  namespace: nic-demo-dos
+spec:
+  host: httpbin.nic-demo-dos.com
+  dos: dos-protected
+  upstreams:
+    - name: httpbin-svc
+      service: httpbin
+      port: 8080
+  routes:
+    - path: /
+      action:
+        pass: httpbin-svc
