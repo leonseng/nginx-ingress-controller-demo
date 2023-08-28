@@ -16,7 +16,7 @@ export default function () {
     "status/200"
   ]
 
-  var url = "http://httpbin.nic-demo-dos.com/" + uris[Math.floor(Math.random() * uris.length)];
+  var url = `http://${__ENV.TARGET}/` + uris[Math.floor(Math.random() * uris.length)];
 
   try {
     http.get(url, {

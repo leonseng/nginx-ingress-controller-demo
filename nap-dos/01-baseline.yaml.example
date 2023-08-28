@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: baseline-script
+  namespace: nic-demo-dos
+data:
+  baseline.sh: |
+    #!/usr/bin/env sh
+
+    set -e
+    CURL_OUTPUT_FORMAT='total_time: %{time_total}s, exit_code: %{exitcode}, err_msg: "%{errormsg}", http_resp_code: %{response_code}\n'
+
+    while true; do
+      CURL_OUTPUT=$(curl -o /dev/null -s -w "$CURL_OUTPUT_FORMAT" httpbin.nic-demo-dos.com/bytes/$((RANDOM%1500)))
+
+      echo "timestamp: $(date '+%Y/%m/%d %H:%M:%S'), $CURL_OUTPUT"
+
+      sleep 0.1
+    done
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: baseline-client
+  name: baseline-client
+  namespace: nic-demo-dos
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: baseline-client
+  template:
+    metadata:
+      labels:
+        app: baseline-client
+    spec:
+      volumes:
+        - name: config-volume
+          configMap:
+            name: baseline-script
+            items:
+              - key: baseline.sh
+                path: baseline.sh
+      containers:
+        - image: curlimages/curl
+          name: curl
+          command:
+            - sh
+          args:
+            - /home/curl_user/baseline.sh
+          volumeMounts:
+            - name: config-volume
+              mountPath: /home/curl_user
+      hostAliases:
+        - hostnames:
+            - httpbin.nic-demo-dos.com
+          ip: $NIC_SVC_IP

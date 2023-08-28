@@ -19,7 +19,7 @@ function randomUri(layers) {
 export default function () {
 
   try {
-    http.get("http://httpbin.nic-demo-dos.com" + randomUri(randomIntBetween(1, 5)), {
+    http.get(`http://${__ENV.TARGET}/` + randomUri(randomIntBetween(1, 5)), {
       timeout: randomIntBetween(5000, 15000)
     });
   } catch (error) {
