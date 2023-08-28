@@ -4,7 +4,7 @@ Demo to showcase NGINX App Protect WAF running on NGINX Ingress Controller to pr
 
 ## Setup
 
-Deploy test environment in the `nic-demo-jwt` namespace
+Deploy test environment in the `nic-demo-waf` namespace
 ```bash
 $ kubectl apply -f 00-setup.yaml
 ```
