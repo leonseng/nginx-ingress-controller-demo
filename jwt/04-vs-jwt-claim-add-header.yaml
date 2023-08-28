@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-jwks
+  namespace: nic-demo-jwt
+type: nginx.org/jwk
+data:
+  jwk: ewogICJrZXlzIjogW3sKICAgICAgImt0eSI6ICJSU0EiLAogICAgICAiZSI6ICJBUUFCIiwKICAgICAgInVzZSI6ICJzaWciLAogICAgICAiYWxnIjogIlJTMjU2IiwKICAgICAgIm4iOiAia3hDZnhvYm1ua2dIZ095Rlh6OE5nQU9paldXeGZLREtWXzRHM0h1R2xGcVVGSTNHM3V3cVJMUTNPWFkzMTBVX01yRFlhYnl2Y2ZPaGIxZUlZSEZFeGZ2ZXdkb1hKUjZVQmJhTHdHV1ZONzNtWmpLQl9zTXNBTEh0UjNBRi1FR2lVSGxDMVlpdnRDano0MTdCenkzbDVqOUVsTzl5RW1uVElfX0M3cm5iaGlKVjRnSWgzUi1EX2lNX05nbE83cG9CdDhoWjE1ZlJDZnhFakhiMmFEdkRFeVQ0YWFuTnI4WExLWklSUm54Q3FLSzJEeGNoQjNnMTQyNGtPSEJYUjNuVWRWYV95M3ByRF8wT0YxZGpwRVg5bzhZaWZPeEZnNmxfeEhYZzF5MmdPNHUyZXA4NXNTZHhMV0V1SzhBVTFIRlNmeTZXR1JXbDhLVnQ1ZzNtYzhCdWx3IgogICAgfQogIF0KfQoK
+---
+apiVersion: k8s.nginx.org/v1
+kind: Policy
+metadata:
+  name: jwt
+spec:
+  jwt:
+    realm: demo
+    secret: my-jwks
+---
+apiVersion: k8s.nginx.org/v1
+kind: VirtualServer
+metadata:
+  name: httpbin
+  namespace: nic-demo-jwt
+spec:
+  host: httpbin.nic-demo-jwt.com
+  policies:
+    - name: jwt
+  server-snippets: |
+    set $http_admin $jwt_claim_admin;
+  upstreams:
+    - name: httpbin-svc
+      service: httpbin
+      port: 8080
+  routes:
+    - path: /
+      matches:
+        - conditions:
+            - header: admin
+              value: "true"
+          action:
+            proxy:
+              upstream: httpbin-svc
+              requestHeaders:
+                set:
+                  - name: Admin
+                    value: ${jwt_claim_admin}
+                  - name: Name
+                    value: ${jwt_claim_name}
+      action:
+        return:
+          code: 401
+          type: text/plain
+          body: "404 Unauthorized\n"
