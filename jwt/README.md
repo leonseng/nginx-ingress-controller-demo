@@ -6,6 +6,12 @@ Backend is a [httpbin](httpbin.org) pod that presents the `/headers` endpoint to
 
 ## Setup
 
+Deploy test environment in the `nic-demo-jwt` namespace
+```bash
+$ kubectl apply -f 00-setup.yaml
+```
+
+Run the following in the terminal
 ```bash
 mkdir -p .tmp
 
@@ -57,7 +63,6 @@ Configure NGINX Ingress Controller to authenticate the client based on the prese
 Apply JWT policy and retest
 ```shell
 $ kubectl apply -f 01-vs-jwt.yaml
-virtualserver.k8s.nginx.org/httpbin configured
 
 $ curl httpbin.nic-demo-jwt.com/headers
 <html>
@@ -89,7 +94,6 @@ $ curl -H "Authorization: Bearer $(cat .tmp/user.jwt)"  httpbin.nic-demo-jwt.com
 Add JWT claim as HTTP header for proxied request to backend
 ```shell
 $ kubectl apply -f 02-vs-jwt-add-header.yaml
-virtualserver.k8s.nginx.org/httpbin configured
 ```
 
 Note that the backend now sees the additional HTTP headers `Jwt-Claim-Role` and `Jwt-Claim-Name` with values extracted from the JWT claims:
@@ -116,7 +120,6 @@ Configure NGINX Ingress Controller to authorize access to an endpoint by validat
 Configure an additional endpoint `/anything` which checks for `$request_method=POST` and `role=admin`:
 ```shell
 $ kubectl apply -f 03-vs-jwt-claim.yaml
-virtualserver.k8s.nginx.org/httpbin configured
 ```
 
 `GET` and `POST` requests with `user` JWT return `401`:
