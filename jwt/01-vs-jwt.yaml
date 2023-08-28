@@ -5,6 +5,8 @@ metadata:
   namespace: nic-demo-jwt
 spec:
   host: httpbin.nic-demo-jwt.com
+  policies:
+    - name: jwt
   upstreams:
     - name: httpbin-svc
       service: httpbin

@@ -1,0 +1,28 @@
+apiVersion: k8s.nginx.org/v1
+kind: VirtualServer
+metadata:
+  name: httpbin
+  namespace: nic-demo-jwt
+spec:
+  host: httpbin.nic-demo-jwt.com
+  policies:
+    - name: jwt
+  server-snippets: |
+    set $http_role $jwt_claim_role;
+  upstreams:
+    - name: httpbin-svc
+      service: httpbin
+      port: 8080
+  routes:
+    - path: /
+      matches:
+        - conditions:
+            - header: role
+              value: "admin"
+          action:
+            pass: httpbin-svc
+      action:
+        return:
+          code: 401
+          type: text/plain
+          body: "401 Unauthorized\n"

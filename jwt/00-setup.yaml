@@ -36,3 +36,29 @@ spec:
       targetPort: 80
   selector:
     app: httpbin
+---
+apiVersion: k8s.nginx.org/v1
+kind: Policy
+metadata:
+  name: jwt
+  namespace: nic-demo-jwt
+spec:
+  jwt:
+    realm: default
+    secret: my-jwks
+---
+apiVersion: k8s.nginx.org/v1
+kind: VirtualServer
+metadata:
+  name: httpbin
+  namespace: nic-demo-jwt
+spec:
+  host: httpbin.nic-demo-jwt.com
+  upstreams:
+    - name: httpbin-svc
+      service: httpbin
+      port: 8080
+  routes:
+    - path: /
+      action:
+        pass: httpbin-svc
