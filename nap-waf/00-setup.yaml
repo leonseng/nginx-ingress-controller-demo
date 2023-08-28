@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nic-demo-waf
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: httpbin
+  name: httpbin
+  namespace: nic-demo-waf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: httpbin
+  template:
+    metadata:
+      labels:
+        app: httpbin
+    spec:
+      containers:
+        - image: kennethreitz/httpbin
+          name: httpbin
+          resources:
+            requests:
+              cpu: "5m"
+            limits:
+              cpu: "15m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  namespace: nic-demo-waf
+spec:
+  ports:
+    - port: 8080
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app: httpbin

@@ -1,0 +1,40 @@
+apiVersion: appprotect.f5.com/v1beta1
+kind: APPolicy
+metadata:
+  name: block-bot-allow-curl
+  namespace: nic-demo-waf
+spec:
+  policy:
+    applicationLanguage: utf-8
+    enforcementMode: blocking
+    name: block-bot-allow-curl
+    template:
+      name: POLICY_TEMPLATE_NGINX_BASE
+    bot-defense:
+      settings:
+        isEnabled: true
+      mitigations:
+        classes:
+          - name: trusted-bot
+            action: ignore
+          - name: untrusted-bot
+            action: block
+          - name: malicious-bot
+            action: block
+        signatures:
+          - action: alarm
+            name: curl
+---
+apiVersion: k8s.nginx.org/v1
+kind: Policy
+metadata:
+  name: waf-policy
+  namespace: nic-demo-waf
+spec:
+  waf:
+    apPolicy: block-bot-allow-curl
+    enable: true
+    securityLogs:
+      - apLogConf: logconf
+        enable: true
+        logDest: stderr
