@@ -37,7 +37,7 @@ cat jwt_claim_user.json | jwt -key .tmp/jwk.key -header kid=$JWT_KID -claim iat=
 ## Demo
 
 Test setup with no JWT
-```
+```shell
 $ curl httpbin.nic-demo-jwt.com/headers
 {
   "headers": {
@@ -55,7 +55,7 @@ $ curl httpbin.nic-demo-jwt.com/headers
 Configure NGINX Ingress Controller to authenticate the client based on the presented JWT. See [How NGINX Plus Validates a JWT](https://docs.nginx.com/nginx/admin-guide/security-controls/configuring-jwt-authentication/#how-nginx-plus-validates-a-jwt) for more information on what is validated.
 
 Apply JWT policy and retest
-```
+```shell
 $ kubectl apply -f 01-vs-jwt.yaml
 virtualserver.k8s.nginx.org/httpbin configured
 
@@ -70,7 +70,7 @@ $ curl httpbin.nic-demo-jwt.com/headers
 ```
 
 Retest with JWT
-```
+```shell
 $ curl -H "Authorization: Bearer $(cat .tmp/user.jwt)"  httpbin.nic-demo-jwt.com/headers
 {
   "headers": {
@@ -87,13 +87,13 @@ $ curl -H "Authorization: Bearer $(cat .tmp/user.jwt)"  httpbin.nic-demo-jwt.com
 ### Enrich header with JWT claim
 
 Add JWT claim as HTTP header for proxied request to backend
-```
+```shell
 $ kubectl apply -f 02-vs-jwt-add-header.yaml
 virtualserver.k8s.nginx.org/httpbin configured
 ```
 
 Note that the backend now sees the additional HTTP headers `Jwt-Claim-Role` and `Jwt-Claim-Name` with values extracted from the JWT claims:
-```
+```shell
 $ curl -H "Authorization: Bearer $(cat .tmp/user.jwt)" httpbin.nic-demo-jwt.com/headers
 {
   "headers": {
@@ -114,13 +114,13 @@ $ curl -H "Authorization: Bearer $(cat .tmp/user.jwt)" httpbin.nic-demo-jwt.com/
 Configure NGINX Ingress Controller to authorize access to an endpoint by validating one or more claims presented in the JWT.
 
 Configure an additional endpoint `/anything` which checks for `$request_method=POST` and `role=admin`:
-```
+```shell
 $ kubectl apply -f 03-vs-jwt-claim.yaml
 virtualserver.k8s.nginx.org/httpbin configured
 ```
 
 `GET` and `POST` requests with `user` JWT return `401`:
-```
+```shell
 $ curl -H "Authorization: Bearer $(cat .tmp/user.jwt)" httpbin.nic-demo-jwt.com/headers
 401 Unauthorized
 
@@ -129,13 +129,13 @@ $ curl -X POST -H "Authorization: Bearer $(cat .tmp/user.jwt)" httpbin.nic-demo-
 ```
 
 `GET` request with `admin` JWT returns `401`:
-```
+```shell
 $ curl -H "Authorization: Bearer $(cat .tmp/admin.jwt)" httpbin.nic-demo-jwt.com/anything
 401 Unauthorized
 ```
 
 `POST` request with `admin` JWT is allowed:
-```
+```shell
 $ curl -X POST -H "Authorization: Bearer $(cat .tmp/admin.jwt)" httpbin.nic-demo-jwt.com/anything
 {
   "args": {},
