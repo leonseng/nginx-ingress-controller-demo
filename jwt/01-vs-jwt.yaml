@@ -1,4 +1,14 @@
 apiVersion: k8s.nginx.org/v1
+kind: Policy
+metadata:
+  name: jwt
+  namespace: nic-demo-jwt
+spec:
+  jwt:
+    realm: default
+    secret: my-jwks
+---
+apiVersion: k8s.nginx.org/v1
 kind: VirtualServer
 metadata:
   name: httpbin
