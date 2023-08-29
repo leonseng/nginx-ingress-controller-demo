@@ -7,8 +7,6 @@ spec:
   host: httpbin.nic-demo-jwt.com
   policies:
     - name: jwt
-  server-snippets: |
-    set $http_role $jwt_claim_role;
   upstreams:
     - name: httpbin-svc
       service: httpbin
